@@ -1,5 +1,4 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TaskItem } from '../components/TaskItem';
 import type { Task } from '../types/task';
@@ -52,15 +51,17 @@ describe('TaskItem', () => {
     expect(screen.queryByText('Préparer les tests')).not.toBeInTheDocument();
   });
 
-  it('edits a task with trimmed values', async () => {
-    const user = userEvent.setup();
+  it('edits a task with trimmed values', () => {
     const props = renderTaskItem();
 
-    await user.click(screen.getByRole('button', { name: 'Modifier' }));
-    await user.clear(screen.getByLabelText('Modifier le titre'));
-    await user.type(screen.getByLabelText('Modifier le titre'), '  Tests frontend  ');
-    await user.clear(screen.getByLabelText('Modifier la description'));
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }));
+    fireEvent.change(screen.getByLabelText('Modifier le titre'), {
+      target: { value: '  Tests frontend  ' },
+    });
+    fireEvent.change(screen.getByLabelText('Modifier la description'), {
+      target: { value: '' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
 
     expect(props.onEdit).toHaveBeenCalledWith(1, {
       title: 'Tests frontend',
@@ -69,28 +70,29 @@ describe('TaskItem', () => {
     expect(screen.queryByLabelText('Modifier le titre')).not.toBeInTheDocument();
   });
 
-  it('does not save an empty edit title', async () => {
-    const user = userEvent.setup();
+  it('does not save an empty edit title', () => {
     const props = renderTaskItem();
 
-    await user.click(screen.getByRole('button', { name: 'Modifier' }));
-    await user.clear(screen.getByLabelText('Modifier le titre'));
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }));
+    fireEvent.change(screen.getByLabelText('Modifier le titre'), {
+      target: { value: '' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
 
     expect(props.onEdit).not.toHaveBeenCalled();
     expect(screen.getByLabelText('Modifier le titre')).toBeInTheDocument();
   });
 
-  it('cancels edits and restores initial values', async () => {
-    const user = userEvent.setup();
+  it('cancels edits and restores initial values', () => {
     renderTaskItem();
 
-    await user.click(screen.getByRole('button', { name: 'Modifier' }));
-    await user.clear(screen.getByLabelText('Modifier le titre'));
-    await user.type(screen.getByLabelText('Modifier le titre'), 'Titre temporaire');
-    await user.click(screen.getByRole('button', { name: 'Annuler' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }));
+    fireEvent.change(screen.getByLabelText('Modifier le titre'), {
+      target: { value: 'Titre temporaire' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
 
-    await user.click(screen.getByRole('button', { name: 'Modifier' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }));
     expect(screen.getByLabelText('Modifier le titre')).toHaveValue('Lire le cahier des charges');
   });
 

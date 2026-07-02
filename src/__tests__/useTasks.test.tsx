@@ -1,5 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as taskApi from '../api/taskApi';
 import { useTasks } from '../hooks/useTasks';
@@ -71,7 +70,6 @@ beforeEach(() => {
 
 describe('useTasks', () => {
   it('loads tasks and updates local state after create, edit, toggle and delete', async () => {
-    const user = userEvent.setup();
     vi.mocked(taskApi.getTasks).mockResolvedValue([firstTask, secondTask]);
     vi.mocked(taskApi.createTask).mockResolvedValue({ ...firstTask, id: 3, title: 'Ajoutée', description: 'Depuis le test' });
     vi.mocked(taskApi.updateTask).mockImplementation((id, data) => Promise.resolve(updatedTask(id, data)));
@@ -83,19 +81,19 @@ describe('useTasks', () => {
     expect(screen.getByTestId('loading')).toHaveTextContent('ready');
     expect(screen.getByTestId('count')).toHaveTextContent('2');
 
-    await user.click(screen.getByRole('button', { name: 'add' }));
+    fireEvent.click(screen.getByRole('button', { name: 'add' }));
     await screen.findByText('Ajoutée - todo');
     expect(taskApi.createTask).toHaveBeenCalledWith({ title: 'Ajoutée', description: 'Depuis le test' });
 
-    await user.click(screen.getByRole('button', { name: 'edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'edit' }));
     await screen.findByText('Modifiée - todo');
     expect(taskApi.updateTask).toHaveBeenCalledWith(1, { title: 'Modifiée' });
 
-    await user.click(screen.getByRole('button', { name: 'toggle' }));
+    fireEvent.click(screen.getByRole('button', { name: 'toggle' }));
     await screen.findByText('Première tâche - done');
     expect(taskApi.updateTask).toHaveBeenCalledWith(1, { completed: true });
 
-    await user.click(screen.getByRole('button', { name: 'remove' }));
+    fireEvent.click(screen.getByRole('button', { name: 'remove' }));
     await waitFor(() => {
       expect(screen.queryByText('Deuxième tâche - done')).not.toBeInTheDocument();
     });
@@ -103,7 +101,6 @@ describe('useTasks', () => {
   });
 
   it('does not call the API when toggling an unknown task', async () => {
-    const user = userEvent.setup();
     vi.mocked(taskApi.getTasks).mockResolvedValue([]);
 
     render(<HookHarness />);
@@ -111,7 +108,7 @@ describe('useTasks', () => {
     await waitFor(() => {
       expect(screen.getByTestId('loading')).toHaveTextContent('ready');
     });
-    await user.click(screen.getByRole('button', { name: 'toggle missing' }));
+    fireEvent.click(screen.getByRole('button', { name: 'toggle missing' }));
 
     expect(taskApi.updateTask).not.toHaveBeenCalled();
   });
@@ -128,7 +125,6 @@ describe('useTasks', () => {
   });
 
   it('stores a generic message for unknown errors and clears it on reload', async () => {
-    const user = userEvent.setup();
     vi.mocked(taskApi.getTasks)
       .mockRejectedValueOnce('erreur brute')
       .mockResolvedValueOnce([secondTask]);
@@ -139,7 +135,7 @@ describe('useTasks', () => {
       expect(screen.getByTestId('error')).toHaveTextContent('Une erreur est survenue');
     });
 
-    await user.click(screen.getByRole('button', { name: 'reload' }));
+    fireEvent.click(screen.getByRole('button', { name: 'reload' }));
     await screen.findByText('Deuxième tâche - done');
     expect(screen.getByTestId('error')).toHaveTextContent('no-error');
   });

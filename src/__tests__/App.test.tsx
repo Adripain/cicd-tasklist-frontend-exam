@@ -1,5 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
 import { useTasks } from '../hooks/useTasks';
@@ -48,7 +47,6 @@ beforeEach(() => {
 
 describe('App', () => {
   it('renders task statistics and forwards list actions', async () => {
-    const user = userEvent.setup();
     const toggleComplete = vi.fn();
     mockUseTasks({ toggleComplete });
 
@@ -61,20 +59,21 @@ describe('App', () => {
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getAllByText('1')).toHaveLength(2);
 
-    await user.click(screen.getByLabelText('Marquer "Première tâche" comme terminée'));
+    fireEvent.click(screen.getByLabelText('Marquer "Première tâche" comme terminée'));
 
     expect(toggleComplete).toHaveBeenCalledWith(1);
   });
 
   it('calls addTask from the form', async () => {
-    const user = userEvent.setup();
     const addTask = vi.fn().mockResolvedValue(undefined);
     mockUseTasks({ tasks: [], addTask });
 
     render(<App />);
 
-    await user.type(screen.getByLabelText('Titre'), 'Nouvelle tâche');
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
+    fireEvent.change(screen.getByLabelText('Titre'), {
+      target: { value: 'Nouvelle tâche' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter' }));
 
     await waitFor(() => {
       expect(addTask).toHaveBeenCalledWith({
@@ -85,14 +84,15 @@ describe('App', () => {
   });
 
   it('swallows addTask errors because the hook owns the error state', async () => {
-    const user = userEvent.setup();
     const addTask = vi.fn().mockRejectedValue(new Error('Erreur API'));
     mockUseTasks({ tasks: [], addTask });
 
     render(<App />);
 
-    await user.type(screen.getByLabelText('Titre'), 'Nouvelle tâche');
-    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
+    fireEvent.change(screen.getByLabelText('Titre'), {
+      target: { value: 'Nouvelle tâche' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter' }));
 
     await waitFor(() => {
       expect(addTask).toHaveBeenCalled();
